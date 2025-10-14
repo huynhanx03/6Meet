@@ -1,0 +1,12 @@
+package initialize
+
+func Run() error {
+	LoadConfig()
+	
+	InitLogger()
+	InitMongoDB()
+	InitDependencies()
+	InitRouter()
+	
+	return nil
+}
