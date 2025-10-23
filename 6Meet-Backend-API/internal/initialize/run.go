@@ -4,9 +4,11 @@ func Run() error {
 	LoadConfig()
 	
 	InitLogger()
-	InitMongoDB()
-	InitDependencies()
-	InitRouter()
+	// InitMongoDB()
+	// InitDependencies()
+	// InitRouter()
+
+	LoadData()
 	
 	return nil
 }

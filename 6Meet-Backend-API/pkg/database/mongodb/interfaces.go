@@ -20,7 +20,7 @@ func NewMongoRepository(db *mongo.Client) *mongoRepository {
 }
 
 // IBaseRepository defines the common interface for all repositories
-type IBaseRepository[T BaseModel] interface {
+type IBaseRepository[T ModelEntity] interface {
 	List(ctx context.Context, opts *dto.ListOptions) (*dto.ListResult[T], error)
 	GetByID(ctx context.Context, id primitive.ObjectID) (*T, error)
 

@@ -6,12 +6,14 @@ type Config struct {
 	Logger  LoggerConfig  `mapstructure:"logger"`
 }
 
+// ServerConfig is the configuration for the server
 type ServerConfig struct {
 	Port int    `mapstructure:"port"`
 	Mode string `mapstructure:"mode"`
 	Host string `mapstructure:"host"`
 }
 
+// MongoDBConfig is the configuration for MongoDB
 type MongoDBConfig struct {
 	Host            string `mapstructure:"host"`
 	Port            int    `mapstructure:"port"`
@@ -24,6 +26,7 @@ type MongoDBConfig struct {
 	MaxConnIdleTime uint64 `mapstructure:"max_conn_idle_time"`
 }
 
+// LoggerConfig is the configuration for the logger
 type LoggerConfig struct {
 	LogLevel     string `mapstructure:"log_level"`
 	FileLogName  string `mapstructure:"file_log_name"`
@@ -33,6 +36,7 @@ type LoggerConfig struct {
 	Compress     bool   `mapstructure:"compress"`
 }
 
+// RedisConfig is the configuration for Redis
 type RedisConfig struct {
 	Host     string `mapstructure:"host"`
 	Port     int    `mapstructure:"port"`

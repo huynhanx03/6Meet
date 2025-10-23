@@ -11,12 +11,14 @@ import (
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/settings"
 )
 
+// Connection represents a MongoDB connection
 type Connection struct {
 	Client *mongo.Client
 	DB     *mongo.Database
 	config *settings.MongoDBConfig
 }
 
+// NewConnection creates a new MongoDB connection
 func (c *Connection) connect() error {
 	if c.config.Timeout == 0 {
 		c.config.Timeout = 10
@@ -47,6 +49,7 @@ func (c *Connection) connect() error {
 
 	return nil
 }
+
 
 func (c *Connection) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

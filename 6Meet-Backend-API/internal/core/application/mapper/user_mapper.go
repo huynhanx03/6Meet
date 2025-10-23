@@ -3,13 +3,13 @@ package mapper
 import (
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/application/dto"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/models"
-	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/model"
+	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/database/mongodb"
 )
 
 // CreateUserRequestToModel maps CreateUserRequest DTO to User models
 func CreateUserRequestToModel(req *dto.CreateUserRequest) *models.User {
 	return &models.User{
-		BaseModel: model.NewBaseModel(),
+		BaseModel: mongodb.NewBaseModel(),
 		Name:      req.Name,
 		Neighbors: req.Neighbors,
 	}

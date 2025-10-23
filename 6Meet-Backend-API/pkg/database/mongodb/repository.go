@@ -10,20 +10,20 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// BaseModel interface that all models must implement
-type BaseModel interface {
+// ModelEntity interface that all models must implement
+type ModelEntity interface {
 	GetID() primitive.ObjectID
 	UpdateTimestamp()
 }
 
 // BaseRepository provides common database operations using generics
-type BaseRepository[T BaseModel] struct {
+type BaseRepository[T ModelEntity] struct {
 	collection *mongo.Collection
 	timeout    time.Duration
 }
 
 // NewBaseRepository creates a new base repository
-func NewBaseRepository[T BaseModel](collection *mongo.Collection) *BaseRepository[T] {
+func NewBaseRepository[T ModelEntity](collection *mongo.Collection) *BaseRepository[T] {
 	return &BaseRepository[T]{
 		collection: collection,
 		timeout:    30 * time.Second,
@@ -107,10 +107,8 @@ func BuildFilter(filters []dto.SearchFilter) bson.M {
 				filter[f.Key] = bson.M{"$regex": str, "$options": "i"}
 			}
 		case "exact":
-			// Exact match filter
 			filter[f.Key] = f.Value
 		case "filter":
-			// Filter filter
 			if str, ok := f.Value.(string); ok {
 				// Convert string ID to ObjectID
 				if objectID, err := primitive.ObjectIDFromHex(str); err == nil {
@@ -187,6 +185,7 @@ func (r *BaseRepository[T]) List(ctx context.Context, opts *dto.ListOptions) (*d
 	}
 	defer cursor.Close(ctx)
 
+	// Decode documents
 	var results []T
 	for cursor.Next(ctx) {
 		var model T

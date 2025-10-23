@@ -21,6 +21,7 @@ type LoggerConfig struct {
 	Compress   bool
 }
 
+// 
 func NewLogger(cfg LoggerConfig) *LoggerZap {
 	logLevel := getLogLevel(cfg.Level)
 
@@ -60,6 +61,7 @@ func NewLogger(cfg LoggerConfig) *LoggerZap {
 	}
 }
 
+// getLogLevel returns the zapcore.Level based on the provided log level
 func getLogLevel(level string) zapcore.Level {
 	switch level {
 	case "debug":

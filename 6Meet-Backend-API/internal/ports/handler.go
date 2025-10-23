@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// IUserHandler
 type IUserHandler interface {
 	ListUsers() gin.HandlerFunc
 	CreateUser() gin.HandlerFunc

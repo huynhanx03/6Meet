@@ -5,6 +5,7 @@ import (
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/database/mongodb"
 )
 
+// InitMongoDB initializes the MongoDB connection
 func InitMongoDB() () {
     config := global.Config.MongoDB
 

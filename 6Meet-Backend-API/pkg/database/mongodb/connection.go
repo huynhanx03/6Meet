@@ -4,6 +4,7 @@ import (
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/settings"
 )
 
+// NewConnection creates a new MongoDB connection
 func NewConnection(config *settings.MongoDBConfig) (*Connection, error) {
 	conn := &Connection{
 		config: config,
