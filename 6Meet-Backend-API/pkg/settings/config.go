@@ -4,6 +4,7 @@ type Config struct {
 	Server  ServerConfig  `mapstructure:"server"`
 	MongoDB MongoDBConfig `mapstructure:"mongodb"`
 	Logger  LoggerConfig  `mapstructure:"logger"`
+	Redis   RedisConfig   `mapstructure:"redis"`
 }
 
 // ServerConfig is the configuration for the server
@@ -28,18 +29,27 @@ type MongoDBConfig struct {
 
 // LoggerConfig is the configuration for the logger
 type LoggerConfig struct {
-	LogLevel     string `mapstructure:"log_level"`
-	FileLogName  string `mapstructure:"file_log_name"`
-	MaxBackups   int    `mapstructure:"max_backups"`
-	MaxAge       int    `mapstructure:"max_age"`
-	MaxSize      int    `mapstructure:"max_size"`
-	Compress     bool   `mapstructure:"compress"`
+	LogLevel    string `mapstructure:"log_level"`
+	FileLogName string `mapstructure:"file_log_name"`
+	MaxBackups  int    `mapstructure:"max_backups"`
+	MaxAge      int    `mapstructure:"max_age"`
+	MaxSize     int    `mapstructure:"max_size"`
+	Compress    bool   `mapstructure:"compress"`
 }
 
 // RedisConfig is the configuration for Redis
 type RedisConfig struct {
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	Password string `mapstructure:"password"`
-	Database int    `mapstructure:"database"`
+	Host            string `mapstructure:"host"`
+	Port            int    `mapstructure:"port"`
+	Password        string `mapstructure:"password"`
+	Database        int    `mapstructure:"database"`
+	DialTimeout     int    `mapstructure:"dial_timeout"`
+	ReadTimeout     int    `mapstructure:"read_timeout"`
+	WriteTimeout    int    `mapstructure:"write_timeout"`
+	PoolSize        int    `mapstructure:"pool_size"`
+	MinIdleConns    int    `mapstructure:"min_idle_conns"`
+	PoolTimeout     int    `mapstructure:"pool_timeout"`
+	MaxRetries      int    `mapstructure:"max_retries"`
+	MinRetryBackoff int    `mapstructure:"min_retry_backoff"`
+	MaxRetryBackoff int    `mapstructure:"max_retry_backoff"`
 }

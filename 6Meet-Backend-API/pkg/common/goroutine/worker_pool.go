@@ -57,8 +57,6 @@ func WithStopOnError(stop bool) WorkerPoolOption {
 	}
 }
 
-// (BlockOnFull option removed; pool uses blocking Submit semantics)
-
 // NewWorkerPool creates a new WorkerPool with the given options
 func NewWorkerPool[T any](ctx context.Context, opts ...WorkerPoolOption) *WorkerPool[T] {
 	config := &WorkerPoolConfig{

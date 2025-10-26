@@ -2,11 +2,15 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 
+	"github.com/huynhanx03/6Meet/6Meet-Backend-API/global"
+	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/constant"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/application/dto"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/application/mapper"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/ports"
+	"go.uber.org/zap"
 
 	d "github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/dto"
 
@@ -45,9 +49,18 @@ func (s *userService) ListUsers(ctx context.Context, opts *d.ListOptions) (*d.Li
 
 // GetUserByID retrieves a user by ID
 func (s *userService) GetUserByID(ctx context.Context, id string) (*dto.UserResponse, error) {
+	userData, isGet, err := global.Redis.Get(constant.PrefixUser + id)
+	global.Logger.Info("Get user from redis", zap.Bool("isGet", isGet), zap.Error(err))
+	if err == nil && isGet {
+		var user dto.UserResponse
+		if err := json.Unmarshal(userData, &user); err == nil {
+			return &user, nil
+		}
+	}
+
 	objectID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, errors.New("invalid student ID format")
+		return nil, errors.New("invalid user ID format")
 	}
 
 	user, err := s.userRepo.GetByID(ctx, objectID)
@@ -56,7 +69,14 @@ func (s *userService) GetUserByID(ctx context.Context, id string) (*dto.UserResp
 		return nil, errors.New("user not found")
 	}
 
-	return mapper.ModelToUserResponse(user), nil
+	userResponse := mapper.ModelToUserResponse(user)
+
+	err = global.Redis.Set(constant.PrefixUser+id, userResponse)
+	if err != nil {
+		global.Logger.Error("Failed to cache user in redis", zap.String("userID", id), zap.Error(err))
+	}
+
+	return userResponse, nil
 }
 
 // CreateUser creates a new user
@@ -86,7 +106,15 @@ func (s *userService) UpdateUser(ctx context.Context, id string, req *dto.Update
 		return nil, err
 	}
 
-	return mapper.ModelToUserResponse(user), nil
+	userResponse := mapper.ModelToUserResponse(user)
+	if _, isGet, _ := global.Redis.Get(constant.PrefixUser + id); isGet {
+		err = global.Redis.Set(constant.PrefixUser+id, userResponse)
+		if err != nil {
+			global.Logger.Error("Failed to update user in redis", zap.String("userID", id), zap.Error(err))
+		}
+	}
+
+	return userResponse, nil
 }
 
 // DeleteUser deletes a user by ID
@@ -102,6 +130,13 @@ func (s *userService) DeleteUser(ctx context.Context, id string) error {
 	}
 	if !exists {
 		return errors.New("user not found")
+	}
+
+	if _, isGet, _ := global.Redis.Get(constant.PrefixUser + id); isGet {
+		err = global.Redis.Invalidate(constant.PrefixUser + id)
+		if err != nil {
+			global.Logger.Error("Failed to delete user from redis", zap.String("userID", id), zap.Error(err))
+		}
 	}
 
 	return s.userRepo.Delete(ctx, objectID)
