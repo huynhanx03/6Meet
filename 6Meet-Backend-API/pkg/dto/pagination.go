@@ -15,19 +15,20 @@ type SortOption struct {
 
 // PaginationOptions represents pagination parameters
 type PaginationOptions struct {
-	Page     int `json:"page" form:"page" binding:"min=1"`
-	PageSize int `json:"page_size" form:"page_size" binding:"min=1,max=100"`
+	Page     int    `json:"page" form:"page" binding:"min=1"`
+	PageSize int    `json:"page_size" form:"page_size" binding:"min=1,max=100"`
+	Cursor   string `json:"cursor" form:"cursor"` // Cursor for keyset pagination (optional)
 }
 
-// ListOptions combines pagination, search/filter, and sorting
-type ListOptions struct {
+// QueryOptions combines pagination, search/filter, and sorting
+type QueryOptions struct {
 	Pagination *PaginationOptions `json:"pagination"`
 	Filters    []SearchFilter     `json:"filters"`
 	Sort       []SortOption       `json:"sort"`
 }
 
-// PaginationResult contains pagination information
-type PaginationResult struct {
+// PaginationMeta contains pagination information
+type PaginationMeta struct {
 	CurrentPage int   `json:"current_page"`
 	PageSize    int   `json:"page_size"`
 	TotalPages  int   `json:"total_pages"`
@@ -36,10 +37,10 @@ type PaginationResult struct {
 	HasPrev     bool  `json:"has_prev"`
 }
 
-// ListResult contains paginated data with pagination info
-type ListResult[T any] struct {
-	Records    *[]T              `json:"records"`
-	Pagination *PaginationResult `json:"pagination"`
+// Paginated contains paginated data with pagination info
+type Paginated[T any] struct {
+	Records    *[]T            `json:"records"`
+	Pagination *PaginationMeta `json:"pagination"`
 }
 
 // SetDefaults sets default values for pagination
@@ -56,7 +57,7 @@ func (p *PaginationOptions) SetDefaults() {
 }
 
 // CalculatePagination calculates pagination information
-func CalculatePagination(currentPage, pageSize int, totalItems int64) *PaginationResult {
+func CalculatePagination(currentPage, pageSize int, totalItems int64) *PaginationMeta {
 	totalPages := int((totalItems + int64(pageSize) - 1) / int64(pageSize))
 	currentPage = min(currentPage, totalPages)
 
@@ -64,7 +65,7 @@ func CalculatePagination(currentPage, pageSize int, totalItems int64) *Paginatio
 		totalPages = 1
 	}
 
-	return &PaginationResult{
+	return &PaginationMeta{
 		CurrentPage: currentPage,
 		PageSize:    pageSize,
 		TotalPages:  totalPages,

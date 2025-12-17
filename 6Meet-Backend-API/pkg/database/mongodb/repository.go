@@ -10,20 +10,16 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// ModelEntity interface that all models must implement
-type ModelEntity interface {
-	GetID() primitive.ObjectID
-	UpdateTimestamp()
-}
-
 // BaseRepository provides common database operations using generics
-type BaseRepository[T ModelEntity] struct {
+type BaseRepository[T Document] struct {
 	collection *mongo.Collection
 	timeout    time.Duration
 }
 
+var _ Repository[*BaseModel] = (*BaseRepository[*BaseModel])(nil)
+
 // NewBaseRepository creates a new base repository
-func NewBaseRepository[T ModelEntity](collection *mongo.Collection) *BaseRepository[T] {
+func NewBaseRepository[T Document](collection *mongo.Collection) *BaseRepository[T] {
 	return &BaseRepository[T]{
 		collection: collection,
 		timeout:    30 * time.Second,
@@ -40,8 +36,8 @@ func (r *BaseRepository[T]) GetCollection() *mongo.Collection {
 	return r.collection
 }
 
-// GetByID retrieves a document by ID
-func (r *BaseRepository[T]) GetByID(ctx context.Context, id primitive.ObjectID) (*T, error) {
+// Get retrieves a document by ID
+func (r *BaseRepository[T]) Get(ctx context.Context, id primitive.ObjectID) (*T, error) {
 	var model T
 
 	err := r.collection.FindOne(ctx, bson.M{"_id": id}).Decode(&model)
@@ -54,8 +50,16 @@ func (r *BaseRepository[T]) GetByID(ctx context.Context, id primitive.ObjectID) 
 
 // Create inserts a new document
 func (r *BaseRepository[T]) Create(ctx context.Context, model *T) error {
-	_, err := r.collection.InsertOne(ctx, model)
-	return err
+	res, err := r.collection.InsertOne(ctx, model)
+	if err != nil {
+		return err
+	}
+
+	if oid, ok := res.InsertedID.(primitive.ObjectID); ok {
+		(*model).SetID(oid)
+	}
+
+	return nil
 }
 
 // Update updates a document by ID
@@ -82,8 +86,8 @@ func (r *BaseRepository[T]) DeleteMany(ctx context.Context, filter bson.M) (int6
 	return result.DeletedCount, nil
 }
 
-// ExistsByID checks whether a document exists by its ID
-func (r *BaseRepository[T]) ExistsByID(ctx context.Context, id primitive.ObjectID) (bool, error) {
+// Exists checks whether a document exists by its ID
+func (r *BaseRepository[T]) Exists(ctx context.Context, id primitive.ObjectID) (bool, error) {
 	count, err := r.collection.CountDocuments(ctx, bson.M{"_id": id})
 	if err != nil {
 		return false, err
@@ -91,69 +95,10 @@ func (r *BaseRepository[T]) ExistsByID(ctx context.Context, id primitive.ObjectI
 	return count > 0, nil
 }
 
-// BuildFilter creates MongoDB filter from SearchFilter slice
-func BuildFilter(filters []dto.SearchFilter) bson.M {
-	filter := bson.M{}
-
-	for _, f := range filters {
-		if f.Key == "" || f.Value == nil {
-			continue
-		}
-
-		switch f.Type {
-		case "search":
-			// Text search using regex
-			if str, ok := f.Value.(string); ok && str != "" {
-				filter[f.Key] = bson.M{"$regex": str, "$options": "i"}
-			}
-		case "exact":
-			filter[f.Key] = f.Value
-		case "filter":
-			if str, ok := f.Value.(string); ok {
-				// Convert string ID to ObjectID
-				if objectID, err := primitive.ObjectIDFromHex(str); err == nil {
-					filter[f.Key] = bson.M{"$in": []primitive.ObjectID{objectID}}
-				}
-			} else {
-				filter[f.Key] = f.Value
-			}
-		default:
-			// Default to exact match
-			filter[f.Key] = f.Value
-		}
-	}
-
-	return filter
-}
-
-// BuildSort creates MongoDB sort from SortOption slice
-func BuildSort(sorts []dto.SortOption) bson.M {
-	sort := bson.M{}
-
-	for _, s := range sorts {
-		if s.Key == "" {
-			continue
-		}
-
-		order := s.Order
-		if order != 1 && order != -1 {
-			order = -1 // Default to descending
-		}
-		sort[s.Key] = order
-	}
-
-	// Default sort if no sort specified
-	if len(sort) == 0 {
-		sort["created_at"] = -1
-	}
-
-	return sort
-}
-
-// List retrieves documents with pagination, search/filter, and sorting
-func (r *BaseRepository[T]) List(ctx context.Context, opts *dto.ListOptions) (*dto.ListResult[T], error) {
+// Find retrieves documents with pagination, search/filter, and sorting
+func (r *BaseRepository[T]) Find(ctx context.Context, opts *dto.QueryOptions) (*dto.Paginated[T], error) {
 	if opts == nil {
-		opts = &dto.ListOptions{}
+		opts = &dto.QueryOptions{}
 	}
 	if opts.Pagination == nil {
 		opts.Pagination = &dto.PaginationOptions{}
@@ -161,7 +106,14 @@ func (r *BaseRepository[T]) List(ctx context.Context, opts *dto.ListOptions) (*d
 	opts.Pagination.SetDefaults()
 
 	// Build filter from search/filter options
-	filter := BuildFilter(opts.Filters)
+	filter := BuildFilter(&opts.Filters)
+
+	// Cursor pagination: if cursor is present, filter by _id < cursor (assuming desc sort)
+	if opts.Pagination.Cursor != "" {
+		if oid, err := primitive.ObjectIDFromHex(opts.Pagination.Cursor); err == nil {
+			filter["_id"] = bson.M{"$lt": oid}
+		}
+	}
 
 	// Count total documents
 	totalItems, err := r.collection.CountDocuments(ctx, filter)
@@ -173,7 +125,7 @@ func (r *BaseRepository[T]) List(ctx context.Context, opts *dto.ListOptions) (*d
 	pagination := dto.CalculatePagination(opts.Pagination.Page, opts.Pagination.PageSize, totalItems)
 
 	// Build sort from sort options
-	sort := BuildSort(opts.Sort)
+	sort := BuildSort(&opts.Sort)
 
 	// Find documents with pagination and sorting
 	findOpts := GetPaginationOptions(opts.Pagination)
@@ -186,19 +138,13 @@ func (r *BaseRepository[T]) List(ctx context.Context, opts *dto.ListOptions) (*d
 	defer cursor.Close(ctx)
 
 	// Decode documents
-	var results []T
-	for cursor.Next(ctx) {
-		var model T
-
-		if err := cursor.Decode(&model); err != nil {
-			return nil, err
-		}
-
-		results = append(results, model)
+	var records []T
+	if err := cursor.All(ctx, &records); err != nil {
+		return nil, err
 	}
 
-	return &dto.ListResult[T]{
-		Records:    &results,
+	return &dto.Paginated[T]{
+		Records:    &records,
 		Pagination: pagination,
 	}, nil
 }

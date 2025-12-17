@@ -10,6 +10,7 @@ import (
 
 var validate = validator.New()
 
+// IsRequestValid validates a request object
 func IsRequestValid(obj any) (bool, string) {
 	err := validate.Struct(obj)
 	if err != nil {
@@ -44,7 +45,7 @@ func IsRequestValid(obj any) (bool, string) {
 	return true, ""
 }
 
-// Hàm helper lấy tên json field
+// jsonFieldName returns the JSON field name for a given field
 func jsonFieldName(obj any, field string) string {
 	t := reflect.TypeOf(obj)
 	if t.Kind() == reflect.Ptr {

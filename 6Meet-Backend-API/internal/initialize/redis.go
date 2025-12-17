@@ -5,8 +5,8 @@ import (
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/database/redis"
 )
 
-// InitRedis initializes the Redis connection
-func InitRedis() {
+// SetupRedis initializes the Redis connection
+func SetupRedis() {
     config := global.Config.Redis
 
     engine, err := redis.NewConnection(&config)

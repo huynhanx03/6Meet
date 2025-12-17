@@ -4,15 +4,15 @@ import (
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/settings"
 )
 
-// NewConnection creates a new MongoDB connection
-func NewConnection(config *settings.MongoDBConfig) (*Connection, error) {
-	conn := &Connection{
+// New creates a new MongoDB connection
+func New(config *settings.MongoDB) (*Client, error) {
+	client := &Client{
 		config: config,
 	}
 
-	if err := conn.connect(); err != nil {
+	if err := client.connect(); err != nil {
 		return nil, err
 	}
 
-	return conn, nil
+	return client, nil
 }

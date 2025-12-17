@@ -3,13 +3,12 @@ package initialize
 func Run() error {
 	LoadConfig()
 
-	InitLogger()
-	InitMongoDB()
-	InitRedis()
-	InitDependencies()
-	InitRouter()
-
+	SetupLogger()
+	SetupMongoDB()
+	SetupRedis()
+	server := InitializeServer()
+	
 	// LoadData()
 
-	return nil
+	return server.Run()
 }

@@ -7,14 +7,12 @@ import (
 	"time"
 )
 
-// HTTPClientPool manages an optimized HTTP client pool for concurrent requests
 type HTTPClientPool struct {
 	client *http.Client
 	mu     sync.RWMutex
 	cache  map[string]interface{}
 }
 
-// HTTPClientConfig holds configuration for the HTTP client pool
 type HTTPClientConfig struct {
 	Timeout         time.Duration
 	MaxIdleConns    int

@@ -28,6 +28,11 @@ func (b *BaseModel) GetID() primitive.ObjectID {
 	return b.ID
 }
 
+// SetID sets the ID field
+func (b *BaseModel) SetID(id primitive.ObjectID) {
+	b.ID = id
+}
+
 // UpdateTimestamp updates the UpdatedAt field
 func (b *BaseModel) UpdateTimestamp() {
 	b.UpdatedAt = time.Now()

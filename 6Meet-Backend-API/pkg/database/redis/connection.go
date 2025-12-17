@@ -7,7 +7,7 @@ import (
 )
 
 // NewConnection creates and returns a new Redis client
-func NewConnection(cfg *settings.RedisConfig) (*RedisEngine, error) {
+func NewConnection(cfg *settings.Redis) (*RedisEngine, error) {
 	engine := &RedisEngine{
 		config: cfg,
 	}
