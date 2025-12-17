@@ -21,7 +21,7 @@ type LoggerConfig struct {
 	Compress   bool
 }
 
-// 
+// NewLogger creates a new logger instance
 func NewLogger(cfg LoggerConfig) *LoggerZap {
 	logLevel := getLogLevel(cfg.Level)
 

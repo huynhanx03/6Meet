@@ -5,8 +5,8 @@ import (
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/logger"
 )
 
-// InitLogger initializes the logger
-func InitLogger() {
+// SetupLogger initializes the logger
+func SetupLogger() {
 	config := logger.LoggerConfig{
 		Level:      global.Config.Logger.LogLevel,
 		Filename:   global.Config.Logger.FileLogName,

@@ -18,18 +18,16 @@ redis:
   host: ${REDIS_HOST}
   port: ${REDIS_PORT}
   password: ${REDIS_PASSWORD}
-  db: ${REDIS_DB}
-  pool_size: 20
+  database: ${REDIS_DATABASE}
+  pool_size: 100
   min_idle_conns: 5
+  pool_timeout: 5
   dial_timeout: 5
   read_timeout: 3
   write_timeout: 3
   max_retries: 3
   max_retry_backoff: 500
   min_retry_backoff: 300
-  max_conn_pool_size: 100
-  min_conn_pool_size: 10
-  conn_pool_timeout: 6
 
 logger:
   log_level: info

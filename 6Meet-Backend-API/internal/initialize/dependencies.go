@@ -1,17 +1,17 @@
+
 package initialize
 
 import (
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/global"
-	driven "github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/adapters/driven/db"
+	db "github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/adapters/driven/db"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/adapters/driver/http"
-	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/container"
-	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/service"
+	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/application/service"
 )
 
-// InitDependencies initializes all dependencies
-func InitDependencies() {
+// InitializeServer wires up all dependencies and returns the Server
+func InitializeServer() *Server {
 	// Initialize repositories
-	userRepo := driven.NewUserRepository(global.MongoDB.DB)
+	userRepo := db.NewUserRepository(global.MongoDB.DB)
 
 	// Initialize services
 	userService := service.NewUserService(userRepo)
@@ -19,17 +19,12 @@ func InitDependencies() {
 	// Initialize controllers
 	userHandler := http.NewUserHandler(userService)
 
-	deps := &container.DependencyContainer{
-		// Repositories
-		UserRepo:       userRepo,
+	// Create router group with dependencies
+	routerGroup := NewRouterGroup(userHandler)
 
-		// Services
-		UserService:    userService,
+	// Create Gin engine
+	engine := NewEngine(routerGroup)
 
-		// Controllers
-		UserHandler:    userHandler,
-	}
-
-	// Set as singleton
-	container.SetDependencies(deps)
+	// Create Server
+	return NewServer(engine)
 }

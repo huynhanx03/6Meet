@@ -5,11 +5,11 @@ import (
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/database/mongodb"
 )
 
-// InitMongoDB initializes the MongoDB connection
-func InitMongoDB() () {
+// SetupMongoDB initializes the MongoDB connection
+func SetupMongoDB() () {
     config := global.Config.MongoDB
 
-    conn, err := mongodb.NewConnection(&config)
+	conn, err := mongodb.New(&config)
 
     if err != nil {
         global.Logger.Sugar().Fatalf("Failed to connect to MongoDB: %v", err)

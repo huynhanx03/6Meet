@@ -1,34 +1,35 @@
 package settings
 
 type Config struct {
-	Server  ServerConfig  `mapstructure:"server"`
-	MongoDB MongoDBConfig `mapstructure:"mongodb"`
-	Logger  LoggerConfig  `mapstructure:"logger"`
-	Redis   RedisConfig   `mapstructure:"redis"`
+	Server  Server  `mapstructure:"server"`
+	MongoDB MongoDB `mapstructure:"mongodb"`
+	Logger  Logger  `mapstructure:"logger"`
+	Redis   Redis   `mapstructure:"redis"`
+	// Kafka   Kafka   `mapstructure:"kafka"`
 }
 
-// ServerConfig is the configuration for the server
-type ServerConfig struct {
-	Port int    `mapstructure:"port"`
+// Server is the configuration for the server
+type Server struct {
 	Mode string `mapstructure:"mode"`
 	Host string `mapstructure:"host"`
+	Port int    `mapstructure:"port"`
 }
 
-// MongoDBConfig is the configuration for MongoDB
-type MongoDBConfig struct {
+// MongoDB is the configuration for MongoDB
+type MongoDB struct {
 	Host            string `mapstructure:"host"`
-	Port            int    `mapstructure:"port"`
 	Username        string `mapstructure:"username"`
 	Password        string `mapstructure:"password"`
 	Database        string `mapstructure:"database"`
-	Timeout         int    `mapstructure:"timeout"`
 	MaxPoolSize     uint64 `mapstructure:"max_pool_size"`
 	MinPoolSize     uint64 `mapstructure:"min_pool_size"`
 	MaxConnIdleTime uint64 `mapstructure:"max_conn_idle_time"`
+	Port            int    `mapstructure:"port"`
+	Timeout         int    `mapstructure:"timeout"`
 }
 
-// LoggerConfig is the configuration for the logger
-type LoggerConfig struct {
+// Logger is the configuration for the logger
+type Logger struct {
 	LogLevel    string `mapstructure:"log_level"`
 	FileLogName string `mapstructure:"file_log_name"`
 	MaxBackups  int    `mapstructure:"max_backups"`
@@ -37,19 +38,19 @@ type LoggerConfig struct {
 	Compress    bool   `mapstructure:"compress"`
 }
 
-// RedisConfig is the configuration for Redis
-type RedisConfig struct {
+// Redis is the configuration for Redis
+type Redis struct {
 	Host            string `mapstructure:"host"`
-	Port            int    `mapstructure:"port"`
 	Password        string `mapstructure:"password"`
+	Port            int    `mapstructure:"port"`
 	Database        int    `mapstructure:"database"`
-	DialTimeout     int    `mapstructure:"dial_timeout"`
-	ReadTimeout     int    `mapstructure:"read_timeout"`
-	WriteTimeout    int    `mapstructure:"write_timeout"`
 	PoolSize        int    `mapstructure:"pool_size"`
 	MinIdleConns    int    `mapstructure:"min_idle_conns"`
 	PoolTimeout     int    `mapstructure:"pool_timeout"`
+	DialTimeout     int    `mapstructure:"dial_timeout"`
+	ReadTimeout     int    `mapstructure:"read_timeout"`
+	WriteTimeout    int    `mapstructure:"write_timeout"`
 	MaxRetries      int    `mapstructure:"max_retries"`
-	MinRetryBackoff int    `mapstructure:"min_retry_backoff"`
 	MaxRetryBackoff int    `mapstructure:"max_retry_backoff"`
+	MinRetryBackoff int    `mapstructure:"min_retry_backoff"`
 }
