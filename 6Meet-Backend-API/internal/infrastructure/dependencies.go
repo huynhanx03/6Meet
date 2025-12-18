@@ -1,11 +1,10 @@
-
-package initialize
+package infrastructure
 
 import (
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/global"
 	db "github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/adapters/driven/db"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/adapters/driver/http"
-	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/application/service"
+	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/service"
 )
 
 // InitializeServer wires up all dependencies and returns the Server

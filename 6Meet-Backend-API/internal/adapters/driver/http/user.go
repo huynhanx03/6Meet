@@ -3,14 +3,13 @@ package http
 import (
 	"github.com/gin-gonic/gin"
 
-	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/application/dto"
+	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/dto"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/ports"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/common/http/handler"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/common/http/request"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/common/http/response"
 
 	d "github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/dto"
-
 )
 
 // UserHandler defines the interface for user handler

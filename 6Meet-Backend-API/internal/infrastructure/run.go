@@ -1,4 +1,4 @@
-package initialize
+package infrastructure
 
 func Run() error {
 	LoadConfig()
@@ -7,7 +7,7 @@ func Run() error {
 	SetupMongoDB()
 	SetupRedis()
 	server := InitializeServer()
-	
+
 	// LoadData()
 
 	return server.Run()

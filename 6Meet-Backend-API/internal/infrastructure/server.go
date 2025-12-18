@@ -1,4 +1,4 @@
-package initialize
+package infrastructure
 
 import (
 	"context"
@@ -73,7 +73,7 @@ func (s *Server) Run() error {
 		global.Logger.Error("Server forced to shutdown", zap.Error(err))
 		return err
 	}
-	
+
 	global.Logger.Info("Server exited")
 	return nil
 }
