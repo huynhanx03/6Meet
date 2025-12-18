@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/global"
-	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/application/dto"
+	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/dto"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/common/goroutine"
 	commonHttp "github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/common/http"
 	"go.uber.org/zap"

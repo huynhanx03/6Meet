@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/adapters/driven/db/models"
-	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/application/dto"
+	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/dto"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/entity"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/database/mongodb"
 
@@ -25,13 +25,13 @@ func ToUserEntity(m *models.User) *entity.User {
 // ToUserModel converts Domain Entity to DB Model
 func ToUserModel(e *entity.User) *models.User {
 	id, _ := primitive.ObjectIDFromHex(e.ID)
-	
+
 	return &models.User{
 		BaseModel: &mongodb.BaseModel{
-            ID: id,
-            CreatedAt: e.CreatedAt,
-            UpdatedAt: e.UpdatedAt,
-        },
+			ID:        id,
+			CreatedAt: e.CreatedAt,
+			UpdatedAt: e.UpdatedAt,
+		},
 		Name:      e.Name,
 		Neighbors: e.Neighbors,
 	}

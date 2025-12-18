@@ -1,4 +1,4 @@
-package initialize
+package infrastructure
 
 import (
 	"net/http"

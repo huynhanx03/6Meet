@@ -5,7 +5,7 @@ import (
 
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/adapters/driven/db/models"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/entity"
-	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/mapper"
+	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/mapper"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/ports"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/database/mongodb"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/dto"
@@ -40,12 +40,12 @@ func (r *userRepository) Find(ctx context.Context, opts *dto.QueryOptions) (*dto
 	}
 
 	// Map generic result from models -> entity
-    if res.Records == nil {
-         return &dto.Paginated[*entity.User]{
-            Records:    &[]*entity.User{},
-            Pagination: res.Pagination,
-        }, nil
-    }
+	if res.Records == nil {
+		return &dto.Paginated[*entity.User]{
+			Records:    &[]*entity.User{},
+			Pagination: res.Pagination,
+		}, nil
+	}
 
 	models := *res.Records
 	entities := make([]*entity.User, len(models))
@@ -86,9 +86,9 @@ func (r *userRepository) Create(ctx context.Context, user *entity.User) error {
 	if err != nil {
 		return err
 	}
-	
+
 	user.ID = model.ID.Hex()
-	
+
 	return nil
 }
 
@@ -99,7 +99,7 @@ func (r *userRepository) Update(ctx context.Context, id string, user *entity.Use
 	if err != nil {
 		return err
 	}
-	
+
 	// Map entity -> model
 	model := mapper.ToUserModel(user)
 
@@ -113,7 +113,7 @@ func (r *userRepository) Delete(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	
+
 	return r.repo.Delete(ctx, oid)
 }
 
