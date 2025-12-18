@@ -8,7 +8,7 @@
 - **Caching**: [Redis](https://redis.io/)
 - **Message Queue**: [Kafka](https://kafka.apache.org/)
 
-## 🏗 Architecture & Project Structure
+## Architecture & Project Structure
 
 This project follows **Hexagonal Architecture** (Ports and Adapters) to ensure domain logic independence.
 
@@ -20,7 +20,8 @@ This project follows **Hexagonal Architecture** (Ports and Adapters) to ensure d
 │   │   ├── driver/     # Primary adapters (e.g., HTTP Handlers)
 │   │   └── driven/     # Secondary adapters (e.g., MongoDB, Redis)
 │   ├── core/           # Core Domain Layer
-│   │   ├── application/# Application Business Rules (Service, DTO)
+│   │   ├── service/    # Application Business Rules
+│   │   └── dto/        # Data Transfer Objects
 │   │   └── entity/     # Enterprise Business Rules (Pure Entities)
 │   ├── ports/          # Interfaces (Ports) defining boundaries
 │   ├── initialize/     # Bootstrap logic & Dependency Injection
@@ -30,7 +31,7 @@ This project follows **Hexagonal Architecture** (Ports and Adapters) to ensure d
 └── Makefile            # Build and run commands
 ```
 
-## 📚 API Documentation
+## API Documentation
 
 API endpoints are available at `/api/v1`.
 - **User APIs**: `/api/v1/users`

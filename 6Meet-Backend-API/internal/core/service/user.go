@@ -7,8 +7,8 @@ import (
 
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/global"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/constant"
-	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/application/dto"
-	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/mapper"
+	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/dto"
+	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/mapper"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/ports"
 	"go.uber.org/zap"
 

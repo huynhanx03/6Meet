@@ -3,7 +3,7 @@ package ports
 import (
 	"context"
 
-	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/application/dto"
+	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/dto"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/entity"
 	d "github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/dto"
 )

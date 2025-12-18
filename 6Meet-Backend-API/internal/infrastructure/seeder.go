@@ -1,4 +1,4 @@
-package initialize
+package infrastructure
 
 import (
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/global"
