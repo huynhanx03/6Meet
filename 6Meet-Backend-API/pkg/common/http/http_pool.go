@@ -10,7 +10,7 @@ import (
 type HTTPClientPool struct {
 	client *http.Client
 	mu     sync.RWMutex
-	cache  map[string]interface{}
+	cache  map[string]any
 }
 
 type HTTPClientConfig struct {
@@ -51,7 +51,7 @@ func NewHTTPClientPool(config *HTTPClientConfig) *HTTPClientPool {
 
 	return &HTTPClientPool{
 		client: client,
-		cache:  make(map[string]interface{}),
+		cache:  make(map[string]any),
 	}
 }
 
@@ -86,7 +86,7 @@ func (p *HTTPClientPool) RequestWithRetry(ctx context.Context, req *http.Request
 }
 
 // GetFromCache retrieves data from cache if available
-func (p *HTTPClientPool) GetFromCache(key string) (interface{}, bool) {
+func (p *HTTPClientPool) GetFromCache(key string) (any, bool) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	val, ok := p.cache[key]
@@ -94,7 +94,7 @@ func (p *HTTPClientPool) GetFromCache(key string) (interface{}, bool) {
 }
 
 // SetCache stores data in cache
-func (p *HTTPClientPool) SetCache(key string, value interface{}) {
+func (p *HTTPClientPool) SetCache(key string, value any) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.cache[key] = value
@@ -104,5 +104,5 @@ func (p *HTTPClientPool) SetCache(key string, value interface{}) {
 func (p *HTTPClientPool) ClearCache() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.cache = make(map[string]interface{})
+	p.cache = make(map[string]any)
 }

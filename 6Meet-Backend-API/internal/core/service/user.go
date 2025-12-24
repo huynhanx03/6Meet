@@ -22,8 +22,6 @@ type userService struct {
 	userRepo ports.UserRepository
 }
 
-var _ ports.UserService = (*userService)(nil)
-
 func NewUserService(
 	userRepo ports.UserRepository,
 ) ports.UserService {

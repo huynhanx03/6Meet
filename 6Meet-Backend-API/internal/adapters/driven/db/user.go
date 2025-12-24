@@ -21,8 +21,6 @@ type userRepository struct {
 	repo *mongodb.BaseRepository[models.User]
 }
 
-var _ ports.UserRepository = (*userRepository)(nil)
-
 // NewUserRepository creates a new instance of UserRepository
 func NewUserRepository(db *mongo.Database) ports.UserRepository {
 	collection := db.Collection(userCollection)
