@@ -2,6 +2,10 @@
 
 A high-performance, low-cost goroutine pool for Go, designed to manage and recycle a massive number of goroutines, reducing memory consumption and preventing goroutine leaks.
 
+## Prerequisites
+
+- Go 1.18+
+
 ## Features
 
 - **Automatic Goroutine Management**: Automatically manages the lifecycle of goroutines, recycling them for reuse.
