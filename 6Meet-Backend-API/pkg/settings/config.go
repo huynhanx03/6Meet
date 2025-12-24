@@ -1,11 +1,12 @@
 package settings
 
 type Config struct {
-	Server  Server  `mapstructure:"server"`
-	MongoDB MongoDB `mapstructure:"mongodb"`
-	Logger  Logger  `mapstructure:"logger"`
-	Redis   Redis   `mapstructure:"redis"`
-	// Kafka   Kafka   `mapstructure:"kafka"`
+	Server  Server        `mapstructure:"server"`
+	MongoDB MongoDB       `mapstructure:"mongodb"`
+	Logger  Logger        `mapstructure:"logger"`
+	Redis   Redis         `mapstructure:"redis"`
+	Kafka   Kafka         `mapstructure:"kafka"`
+	ES      Elasticsearch `mapstructure:"elasticsearch"`
 }
 
 // Server is the configuration for the server
@@ -53,4 +54,22 @@ type Redis struct {
 	MaxRetries      int    `mapstructure:"max_retries"`
 	MaxRetryBackoff int    `mapstructure:"max_retry_backoff"`
 	MinRetryBackoff int    `mapstructure:"min_retry_backoff"`
+}
+
+// Kafka is the configuration for Kafka
+type Kafka struct {
+	Brokers         []string `mapstructure:"brokers"`
+	FlushFrequency  int      `mapstructure:"flush_frequency"`   // Milliseconds
+	FlushBytes      int      `mapstructure:"flush_bytes"`       // Bytes
+	MaxMessageBytes int      `mapstructure:"max_message_bytes"` // Bytes
+	Timeout         int      `mapstructure:"timeout"`           // Seconds
+	MaxRetries      int      `mapstructure:"max_retries"`
+	RetryBackoff    int      `mapstructure:"retry_backoff"` // Milliseconds
+}
+
+// Elasticsearch is the configuration for Elasticsearch
+type Elasticsearch struct {
+	Addresses []string `mapstructure:"addresses"`
+	Username  string   `mapstructure:"username"`
+	Password  string   `mapstructure:"password"`
 }

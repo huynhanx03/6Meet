@@ -1,0 +1,142 @@
+package elasticsearch
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+
+	"github.com/elastic/go-elasticsearch/v8/esapi"
+)
+
+// BaseRepository provides common database operations using generics
+type BaseRepository[T Document] struct {
+	client ElasticClient
+	index  string
+}
+
+var _ Repository[Document] = (*BaseRepository[Document])(nil)
+
+// NewBaseRepository creates a new base repository
+func NewBaseRepository[T Document](client ElasticClient, index string) *BaseRepository[T] {
+	return &BaseRepository[T]{
+		client: client,
+		index:  index,
+	}
+}
+
+// Index creates or updates a document
+func (r *BaseRepository[T]) Index(ctx context.Context, doc *T) error {
+	body, err := json.Marshal(doc)
+	if err != nil {
+		return fmt.Errorf("failed to marshal document: %w", err)
+	}
+
+	req := esapi.IndexRequest{
+		Index:      r.index,
+		DocumentID: (*doc).GetID(),
+		Body:       bytes.NewReader(body),
+		Refresh:    "true", // Force refresh for immediate consistency (optional, good for dev)
+	}
+
+	res, err := req.Do(ctx, r.client)
+	if err != nil {
+		return fmt.Errorf("failed to execute index request: %w", err)
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		return fmt.Errorf("index request failed: %s", res.Status())
+	}
+
+	return nil
+}
+
+// Get retrieves a document by ID
+func (r *BaseRepository[T]) Get(ctx context.Context, docID string) (*T, error) {
+	req := esapi.GetRequest{
+		Index:      r.index,
+		DocumentID: docID,
+	}
+
+	res, err := req.Do(ctx, r.client)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute get request: %w", err)
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		if res.StatusCode == 404 {
+			return nil, nil // Not found
+		}
+		return nil, fmt.Errorf("get request failed: %s", res.Status())
+	}
+
+	var response struct {
+		Source T `json:"_source"`
+	}
+
+	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &response.Source, nil
+}
+
+// Delete removes a document by ID
+func (r *BaseRepository[T]) Delete(ctx context.Context, docID string) error {
+	req := esapi.DeleteRequest{
+		Index:      r.index,
+		DocumentID: docID,
+	}
+
+	res, err := req.Do(ctx, r.client)
+	if err != nil {
+		return fmt.Errorf("failed to execute delete request: %w", err)
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		return fmt.Errorf("delete request failed: %s", res.Status())
+	}
+
+	return nil
+}
+
+// Search executes a raw query
+func (r *BaseRepository[T]) Search(ctx context.Context, query io.Reader) ([]T, error) {
+	req := esapi.SearchRequest{
+		Index: []string{r.index},
+		Body:  query,
+	}
+
+	res, err := req.Do(ctx, r.client)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute search request: %w", err)
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		return nil, fmt.Errorf("search request failed: %s", res.Status())
+	}
+
+	var response struct {
+		Hits struct {
+			Hits []struct {
+				Source T `json:"_source"`
+			} `json:"hits"`
+		} `json:"hits"`
+	}
+
+	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
+		return nil, fmt.Errorf("failed to decode search response: %w", err)
+	}
+
+	results := make([]T, 0, len(response.Hits.Hits))
+	for _, hit := range response.Hits.Hits {
+		results = append(results, hit.Source)
+	}
+
+	return results, nil
+}

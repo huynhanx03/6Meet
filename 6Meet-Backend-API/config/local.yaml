@@ -29,10 +29,18 @@ redis:
   max_retry_backoff: 500
   min_retry_backoff: 300
 
-logger:
-  log_level: info
-  file_log_name: "./storages/logs/app.log"
-  max_backups: 10
-  max_age: 3
-  max_size: 5
-  compress: true
+kafka:
+  brokers:
+     - ${KAFKA_BROKER_1}
+  flush_frequency: 500
+  flush_bytes: 16384
+  max_message_bytes: 1000000
+  timeout: 10
+  max_retries: 3
+  retry_backoff: 100
+
+elasticsearch:
+  addresses:
+    - "http://localhost:9200"
+  username: "elastic"
+  password: "changeme"

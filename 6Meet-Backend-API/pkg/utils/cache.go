@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func HandleHitCache(ctx context.Context, model interface{}, c cache.CacheEngine, key string) error {
+func HandleHitCache(ctx context.Context, model any, c cache.CacheEngine, key string) error {
 	byteData, exists, err := c.Get(ctx, key)
 	if exists && err == nil {
 		err = json.Unmarshal(byteData, model)
@@ -20,6 +20,6 @@ func HandleHitCache(ctx context.Context, model interface{}, c cache.CacheEngine,
 	return errors.Wrap(err, "miss cache")
 }
 
-func HandleSetCache(ctx context.Context, model interface{}, c cache.CacheEngine, key string, ttl int) error {
+func HandleSetCache(ctx context.Context, model any, c cache.CacheEngine, key string, ttl int) error {
 	return c.Set(ctx, key, model, ToDuration(ttl))
 }
