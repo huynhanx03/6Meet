@@ -30,7 +30,7 @@ func NewBaseRepository[T Document](client ElasticClient, index string) *BaseRepo
 func (r *BaseRepository[T]) Index(ctx context.Context, doc *T) error {
 	body, err := json.Marshal(doc)
 	if err != nil {
-		return fmt.Errorf("failed to marshal document: %w", err)
+		return fmt.Errorf("%w: %v", ErrMarshalFailed, err)
 	}
 
 	req := esapi.IndexRequest{
@@ -42,12 +42,12 @@ func (r *BaseRepository[T]) Index(ctx context.Context, doc *T) error {
 
 	res, err := req.Do(ctx, r.client)
 	if err != nil {
-		return fmt.Errorf("failed to execute index request: %w", err)
+		return fmt.Errorf("%w: %v", ErrIndexRequestFailed, err)
 	}
 	defer res.Body.Close()
 
 	if res.IsError() {
-		return fmt.Errorf("index request failed: %s", res.Status())
+		return fmt.Errorf("%w: %s", ErrIndexRequestFailed, res.Status())
 	}
 
 	return nil
@@ -62,7 +62,7 @@ func (r *BaseRepository[T]) Get(ctx context.Context, docID string) (*T, error) {
 
 	res, err := req.Do(ctx, r.client)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute get request: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrGetRequestFailed, err)
 	}
 	defer res.Body.Close()
 
@@ -70,7 +70,7 @@ func (r *BaseRepository[T]) Get(ctx context.Context, docID string) (*T, error) {
 		if res.StatusCode == 404 {
 			return nil, nil // Not found
 		}
-		return nil, fmt.Errorf("get request failed: %s", res.Status())
+		return nil, fmt.Errorf("%w: %s", ErrGetRequestFailed, res.Status())
 	}
 
 	var response struct {
@@ -78,7 +78,7 @@ func (r *BaseRepository[T]) Get(ctx context.Context, docID string) (*T, error) {
 	}
 
 	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
-		return nil, fmt.Errorf("failed to decode response: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrDecodeFailed, err)
 	}
 
 	return &response.Source, nil
@@ -93,12 +93,12 @@ func (r *BaseRepository[T]) Delete(ctx context.Context, docID string) error {
 
 	res, err := req.Do(ctx, r.client)
 	if err != nil {
-		return fmt.Errorf("failed to execute delete request: %w", err)
+		return fmt.Errorf("%w: %v", ErrDeleteRequestFailed, err)
 	}
 	defer res.Body.Close()
 
 	if res.IsError() {
-		return fmt.Errorf("delete request failed: %s", res.Status())
+		return fmt.Errorf("%w: %s", ErrDeleteRequestFailed, res.Status())
 	}
 
 	return nil
@@ -113,12 +113,12 @@ func (r *BaseRepository[T]) Search(ctx context.Context, query io.Reader) ([]T, e
 
 	res, err := req.Do(ctx, r.client)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute search request: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrSearchRequestFailed, err)
 	}
 	defer res.Body.Close()
 
 	if res.IsError() {
-		return nil, fmt.Errorf("search request failed: %s", res.Status())
+		return nil, fmt.Errorf("%w: %s", ErrSearchRequestFailed, res.Status())
 	}
 
 	var response struct {
@@ -130,7 +130,7 @@ func (r *BaseRepository[T]) Search(ctx context.Context, query io.Reader) ([]T, e
 	}
 
 	if err := json.NewDecoder(res.Body).Decode(&response); err != nil {
-		return nil, fmt.Errorf("failed to decode search response: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrDecodeFailed, err)
 	}
 
 	results := make([]T, 0, len(response.Hits.Hits))

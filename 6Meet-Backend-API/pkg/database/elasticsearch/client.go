@@ -26,18 +26,18 @@ func New(cfg settings.Elasticsearch) (ElasticClient, error) {
 	// Create client
 	client, err := elasticsearch.NewClient(config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create elasticsearch client: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrCreateClientFailed, err)
 	}
 
 	// Ping to verify connection
 	info, err := client.Info()
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to elasticsearch: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrConnectFailed, err)
 	}
 	defer info.Body.Close()
 
 	if info.IsError() {
-		return nil, fmt.Errorf("elasticsearch info request failed: %s", info.Status())
+		return nil, fmt.Errorf("%w: %s", ErrInfoRequestFailed, info.Status())
 	}
 
 	return &Client{Client: client}, nil

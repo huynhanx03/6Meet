@@ -55,11 +55,11 @@ func (c *Client) connect() error {
 
 	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
-		return fmt.Errorf("failed to connect to MongoDB: %w", err)
+		return fmt.Errorf("%w: %v", ErrConnectFailed, err)
 	}
 
 	if err := client.Ping(ctx, nil); err != nil {
-		return fmt.Errorf("failed to ping MongoDB: %w", err)
+		return fmt.Errorf("%w: %v", ErrPingFailed, err)
 	}
 
 	c.Client = client
@@ -83,13 +83,12 @@ func (c *Client) setDefaultConfig() {
 	}
 }
 
-
 func (c *Client) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := c.Client.Disconnect(ctx); err != nil {
-		return fmt.Errorf("failed to disconnect from MongoDB: %w", err)
+		return fmt.Errorf("%w: %v", ErrDisconnectFailed, err)
 	}
 	return nil
 }

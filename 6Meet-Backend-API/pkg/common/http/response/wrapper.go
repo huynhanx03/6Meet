@@ -55,7 +55,6 @@ func SuccessResponse(c *gin.Context, code int, data any) {
 }
 
 // ErrorResponse sends an error response
-// ErrorResponse sends an error response
 func ErrorResponse(c *gin.Context, code int, err any) {
 	var httpCode int
 	var msgStr string

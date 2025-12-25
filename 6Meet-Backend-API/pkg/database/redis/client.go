@@ -3,7 +3,6 @@ package redis
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -63,7 +62,7 @@ func (r *RedisEngine) connect() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := r.client.Ping(ctx).Err(); err != nil {
-		return fmt.Errorf("redis ping failed: %w", err)
+		return fmt.Errorf("%w: %v", ErrPingFailed, err)
 	}
 
 	return nil
@@ -104,7 +103,7 @@ func (r *RedisEngine) setDefaultConfig() {
 func (r *RedisEngine) Get(ctx context.Context, key string) ([]byte, bool, error) {
 	byteValue, err := r.client.Get(ctx, key).Bytes()
 	if err == redisV9.Nil {
-		return nil, false, errors.New("key not found")
+		return nil, false, ErrKeyNotFound
 	}
 	if err != nil {
 		return nil, false, err
