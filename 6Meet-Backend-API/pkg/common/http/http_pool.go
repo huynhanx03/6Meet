@@ -5,12 +5,14 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/utils"
 )
 
 type HTTPClientPool struct {
 	client *http.Client
 	mu     sync.RWMutex
-	cache  map[string]interface{}
+	cache  map[string]any
 }
 
 type HTTPClientConfig struct {
@@ -51,7 +53,7 @@ func NewHTTPClientPool(config *HTTPClientConfig) *HTTPClientPool {
 
 	return &HTTPClientPool{
 		client: client,
-		cache:  make(map[string]interface{}),
+		cache:  make(map[string]any),
 	}
 }
 
@@ -64,15 +66,26 @@ func (p *HTTPClientPool) RequestWithRetry(ctx context.Context, req *http.Request
 			return nil, ctx.Err()
 		default:
 			resp, err := p.client.Do(req)
-			if err == nil && resp.StatusCode < 500 {
-				return resp, nil
+
+			// Success case: No error and status is OK
+			if err == nil {
+				if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= http.StatusInternalServerError {
+					// Need retry
+					resp.Body.Close() // Close body to prevent leak before retry
+				} else {
+					// Success
+					return resp, nil
+				}
 			}
+
 			if err != nil {
 				lastErr = err
 			}
-			// Exponential backoff
-			backoff := time.Duration(1<<attempt) * time.Second
-			timer := time.NewTimer(backoff)
+
+			// Calculate backoff using shared utility with attempt cap
+			waitDuration := utils.CalculateBackoffByAttempt(attempt, 1*time.Second, maxRetries)
+
+			timer := time.NewTimer(waitDuration)
 			select {
 			case <-ctx.Done():
 				timer.Stop()
@@ -86,7 +99,7 @@ func (p *HTTPClientPool) RequestWithRetry(ctx context.Context, req *http.Request
 }
 
 // GetFromCache retrieves data from cache if available
-func (p *HTTPClientPool) GetFromCache(key string) (interface{}, bool) {
+func (p *HTTPClientPool) GetFromCache(key string) (any, bool) {
 	p.mu.RLock()
 	defer p.mu.RUnlock()
 	val, ok := p.cache[key]
@@ -94,7 +107,7 @@ func (p *HTTPClientPool) GetFromCache(key string) (interface{}, bool) {
 }
 
 // SetCache stores data in cache
-func (p *HTTPClientPool) SetCache(key string, value interface{}) {
+func (p *HTTPClientPool) SetCache(key string, value any) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.cache[key] = value
@@ -104,5 +117,5 @@ func (p *HTTPClientPool) SetCache(key string, value interface{}) {
 func (p *HTTPClientPool) ClearCache() {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.cache = make(map[string]interface{})
+	p.cache = make(map[string]any)
 }

@@ -55,11 +55,11 @@ func (c *Client) connect() error {
 
 	client, err := mongo.Connect(ctx, clientOpts)
 	if err != nil {
-		return fmt.Errorf("failed to connect to MongoDB: %w", err)
+		return fmt.Errorf("%w: %v", ErrConnectFailed, err)
 	}
 
 	if err := client.Ping(ctx, nil); err != nil {
-		return fmt.Errorf("failed to ping MongoDB: %w", err)
+		return fmt.Errorf("%w: %v", ErrPingFailed, err)
 	}
 
 	c.Client = client
@@ -83,13 +83,12 @@ func (c *Client) setDefaultConfig() {
 	}
 }
 
-
 func (c *Client) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := c.Client.Disconnect(ctx); err != nil {
-		return fmt.Errorf("failed to disconnect from MongoDB: %w", err)
+		return fmt.Errorf("%w: %v", ErrDisconnectFailed, err)
 	}
 	return nil
 }
@@ -97,12 +96,12 @@ func (c *Client) Close() error {
 func (c *Client) buildURI() string {
 	if c.config.Username != "" && c.config.Password != "" {
 		return fmt.Sprintf(
-			"mongodb://%s@%s:%d",
+			"mongodb://%s@%s:%d/?directConnection=true",
 			url.UserPassword(c.config.Username, c.config.Password).String(),
 			c.config.Host,
 			c.config.Port,
 		)
 	}
 
-	return fmt.Sprintf("mongodb://%s:%d", c.config.Host, c.config.Port)
+	return fmt.Sprintf("mongodb://%s:%d/?directConnection=true", c.config.Host, c.config.Port)
 }

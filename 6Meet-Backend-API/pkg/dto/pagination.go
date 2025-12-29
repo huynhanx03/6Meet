@@ -2,9 +2,9 @@ package dto
 
 // SearchFilter represents search and filter parameters
 type SearchFilter struct {
-	Key   string      `json:"key" form:"key"`     // Field name to search/filter
-	Value interface{} `json:"value" form:"value"` // Value to search/filter
-	Type  string      `json:"type" form:"type"`   // "search" or "filter" or "exact"
+	Key   string `json:"key" form:"key"`     // Field name to search/filter
+	Value any    `json:"value" form:"value"` // Value to search/filter
+	Type  string `json:"type" form:"type"`   // "search" or "filter" or "exact"
 }
 
 // SortOption represents sorting parameters
