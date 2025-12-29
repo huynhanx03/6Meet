@@ -21,13 +21,6 @@ type CacheEngine interface {
 	// Useful for clearing group caches.
 	InvalidatePrefix(ctx context.Context, prefix string) error
 
-	// BatchSet stores multiple values in a pipeline.
-	// values is a map of key -> value.
-	BatchSet(ctx context.Context, values map[string]any, ttl time.Duration) error
-
-	// BatchDelete removes multiple keys from the cache.
-	BatchDelete(ctx context.Context, keys []string) error
-
 	// Close closes the connection to the cache server.
 	Close()
 }

@@ -1,17 +1,13 @@
 package utils
 
-import (
-	"time"
+import "time"
 
-	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/constraints"
-)
-
-// ToDuration converts any integer type (seconds) to time.Duration.
-func ToDuration[T constraints.Integer](seconds T) time.Duration {
+// ToDuration converts various number types (seconds) to time.Duration
+func ToDuration[T int | int64 | uint64](seconds T) time.Duration {
 	return time.Duration(seconds) * time.Second
 }
 
-// ToDurationMs converts any integer type (milliseconds) to time.Duration.
-func ToDurationMs[T constraints.Integer](milliseconds T) time.Duration {
+// ToDurationMs converts various number types (milliseconds) to time.Duration
+func ToDurationMs[T int | int64 | uint64](milliseconds T) time.Duration {
 	return time.Duration(milliseconds) * time.Millisecond
 }

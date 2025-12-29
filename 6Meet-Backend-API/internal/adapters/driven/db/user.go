@@ -5,6 +5,7 @@ import (
 
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/adapters/driven/db/models"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/entity"
+	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/mapper"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/ports"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/database/mongodb"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/dto"
@@ -20,8 +21,10 @@ type userRepository struct {
 	repo *mongodb.BaseRepository[models.User]
 }
 
-// NewUser creates a new instance of UserRepository
-func NewUser(db *mongo.Database) ports.UserRepository {
+var _ ports.UserRepository = (*userRepository)(nil)
+
+// NewUserRepository creates a new instance of UserRepository
+func NewUserRepository(db *mongo.Database) ports.UserRepository {
 	collection := db.Collection(userCollection)
 	return &userRepository{
 		repo: mongodb.NewBaseRepository[models.User](collection),
@@ -47,7 +50,7 @@ func (r *userRepository) Find(ctx context.Context, opts *dto.QueryOptions) (*dto
 	models := *res.Records
 	entities := make([]*entity.User, len(models))
 	for i := range models {
-		entities[i] = models[i].ToEntity()
+		entities[i] = mapper.ToUserEntity(&models[i])
 	}
 
 	return &dto.Paginated[*entity.User]{
@@ -70,13 +73,13 @@ func (r *userRepository) Get(ctx context.Context, id string) (*entity.User, erro
 	}
 
 	// Map model -> entity
-	return model.ToEntity(), nil
+	return mapper.ToUserEntity(model), nil
 }
 
 // Create a new user
 func (r *userRepository) Create(ctx context.Context, user *entity.User) error {
 	// Map entity -> model
-	model := models.FromEntity(user)
+	model := mapper.ToUserModel(user)
 
 	// Create model in database
 	err := r.repo.Create(ctx, model)
@@ -98,7 +101,7 @@ func (r *userRepository) Update(ctx context.Context, id string, user *entity.Use
 	}
 
 	// Map entity -> model
-	model := models.FromEntity(user)
+	model := mapper.ToUserModel(user)
 
 	return r.repo.Update(ctx, oid, model)
 }

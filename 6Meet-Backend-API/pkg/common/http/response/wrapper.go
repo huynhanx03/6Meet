@@ -8,9 +8,9 @@ import (
 )
 
 type Data struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-	Data    any    `json:"data"`
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
 }
 
 type Pagination struct {
@@ -23,30 +23,31 @@ type Pagination struct {
 type WithPagination struct {
 	Code       int         `json:"code"`
 	Message    string      `json:"message"`
-	Data       any         `json:"data"`
+	Data       interface{} `json:"data"`
 	Pagination *Pagination `json:"pagination,omitempty"`
 }
 
 // ToErrorResponse converts error to error response
-func ToErrorResponse(input any) string {
-	var messages []string
+func ToErrorResponse(input interface{}) string {
+    var messages []string
 
-	switch v := input.(type) {
-	case string:
-		messages = []string{v}
-	case []string:
-		messages = v
-	case error:
-		messages = []string{v.Error()}
-	default:
-		messages = []string{"Unknown error"}
-	}
+    switch v := input.(type) {
+    case string:
+        messages = []string{v}
+    case []string:
+        messages = v
+    case error:
+        messages = []string{v.Error()}
+    default:
+        messages = []string{"Unknown error"}
+    }
 
-	return strings.Join(messages, ", ")
+    return strings.Join(messages, ", ")
 }
 
+
 // SuccessResponse sends a successful response
-func SuccessResponse(c *gin.Context, code int, data any) {
+func SuccessResponse(c *gin.Context, code int, data interface{}) {
 	c.JSON(GetHTTPCode(code), Data{
 		Code:    code,
 		Message: Msg[code],
@@ -55,7 +56,8 @@ func SuccessResponse(c *gin.Context, code int, data any) {
 }
 
 // ErrorResponse sends an error response
-func ErrorResponse(c *gin.Context, code int, err any) {
+// ErrorResponse sends an error response
+func ErrorResponse(c *gin.Context, code int, err interface{}) {
 	var httpCode int
 	var msgStr string
 
@@ -76,10 +78,10 @@ func ErrorResponse(c *gin.Context, code int, err any) {
 		}
 	} else if e, ok := err.(error); ok {
 		// Standard error
-		// We deliberately keep msgStr as the safe default (Msg[code])
+		// We deliberately keep msgStr as the safe default (Msg[code]) 
 		// to prevent leaking internal system errors to the client.
 		// If you want to expose the error string, use AppError.
-		_ = e // Mark used
+        _ = e // Mark used
 	}
 
 	c.JSON(httpCode, Data{
