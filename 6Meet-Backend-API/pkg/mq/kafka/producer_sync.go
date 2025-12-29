@@ -42,10 +42,13 @@ func NewSyncProducer(cfg *Config) (SyncProducer, error) {
 // Publish sends a message and waits for acknowledgement.
 // Returns partition, offset, and error.
 func (sp *syncProducer) Publish(ctx context.Context, topic string, key, value []byte) (int32, int64, error) {
+	headers := buildHeaders(ctx)
+
 	msg := &sarama.ProducerMessage{
-		Topic: topic,
-		Key:   sarama.ByteEncoder(key),
-		Value: sarama.ByteEncoder(value),
+		Topic:   topic,
+		Key:     sarama.ByteEncoder(key),
+		Value:   sarama.ByteEncoder(value),
+		Headers: headers,
 	}
 
 	// SyncProducer.SendMessage is blocking

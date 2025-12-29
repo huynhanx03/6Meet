@@ -17,6 +17,7 @@ type ElasticClient interface {
 	Delete(index string, id string, o ...func(*esapi.DeleteRequest)) (*esapi.Response, error)
 
 	Search(o ...func(*esapi.SearchRequest)) (*esapi.Response, error)
+	Bulk(body io.Reader, o ...func(*esapi.BulkRequest)) (*esapi.Response, error)
 
 	// Perform is required for esapi.Transport interface
 	Perform(*http.Request) (*http.Response, error)
@@ -34,4 +35,6 @@ type Repository[T Document] interface {
 	Index(ctx context.Context, doc *T) error
 	Delete(ctx context.Context, docID string) error
 	Search(ctx context.Context, query io.Reader) ([]T, error)
+	BatchIndex(ctx context.Context, docs []*T) error
+	BatchDelete(ctx context.Context, docIDs []string) error
 }

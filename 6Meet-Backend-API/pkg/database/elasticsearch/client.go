@@ -67,3 +67,8 @@ func (c *Client) Delete(index string, id string, o ...func(*esapi.DeleteRequest)
 func (c *Client) Search(o ...func(*esapi.SearchRequest)) (*esapi.Response, error) {
 	return c.Client.Search(o...)
 }
+
+// Bulk wrapper
+func (c *Client) Bulk(body io.Reader, o ...func(*esapi.BulkRequest)) (*esapi.Response, error) {
+	return c.Client.Bulk(body, o...)
+}

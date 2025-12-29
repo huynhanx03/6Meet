@@ -1,7 +1,6 @@
 package kafka
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/IBM/sarama"
@@ -22,7 +21,7 @@ func (consumerGroupHandler) Cleanup(_ sarama.ConsumerGroupSession) error { retur
 // ConsumeClaim processes messages from the consumer group
 func (h consumerGroupHandler) ConsumeClaim(sess sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
-		ctx := context.Background()
+		ctx := buildContext(msg.Headers)
 		if err := h.handlerFunc(ctx, msg.Key, msg.Value); err != nil {
 			if h.errHandler != nil {
 				h.errHandler(fmt.Errorf("process message error: %w", err))

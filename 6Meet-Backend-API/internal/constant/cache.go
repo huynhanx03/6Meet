@@ -1,6 +1,8 @@
 package constant
 
+import "time"
+
 const (
-	PrefixUser          = "user::"
-	CacheExpirationUser = 3600 // 1 Hour
+	UserCachePrefix = "user::"
+	UserCacheTTL    = 1 * time.Hour
 )

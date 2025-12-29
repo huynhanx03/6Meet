@@ -38,9 +38,12 @@ kafka:
   timeout: 10
   max_retries: 3
   retry_backoff: 100
+  max_processing_time: 600
+  consumer_batch_size: 100
+  consumer_batch_interval: 1000
 
 elasticsearch:
   addresses:
-    - "http://localhost:9200"
-  username: "elastic"
-  password: "changeme"
+    - "http://localhost:1102"
+  username: ""
+  password: ""

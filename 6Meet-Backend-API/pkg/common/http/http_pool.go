@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/utils"
 )
 
 type HTTPClientPool struct {
@@ -64,15 +66,26 @@ func (p *HTTPClientPool) RequestWithRetry(ctx context.Context, req *http.Request
 			return nil, ctx.Err()
 		default:
 			resp, err := p.client.Do(req)
-			if err == nil && resp.StatusCode < 500 {
-				return resp, nil
+
+			// Success case: No error and status is OK
+			if err == nil {
+				if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= http.StatusInternalServerError {
+					// Need retry
+					resp.Body.Close() // Close body to prevent leak before retry
+				} else {
+					// Success
+					return resp, nil
+				}
 			}
+
 			if err != nil {
 				lastErr = err
 			}
-			// Exponential backoff
-			backoff := time.Duration(1<<attempt) * time.Second
-			timer := time.NewTimer(backoff)
+
+			// Calculate backoff using shared utility with attempt cap
+			waitDuration := utils.CalculateBackoffByAttempt(attempt, 1*time.Second, maxRetries)
+
+			timer := time.NewTimer(waitDuration)
 			select {
 			case <-ctx.Done():
 				timer.Stop()

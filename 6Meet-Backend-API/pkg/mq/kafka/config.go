@@ -18,6 +18,7 @@ type ProducerConfig struct {
 }
 
 type ConsumerConfig struct {
-	InitialOffset  int64 // InitialOffset: OffsetOldest or OffsetNewest
-	SessionTimeout int   // SessionTimeout for rebalancing
+	InitialOffset     int64 // InitialOffset: OffsetOldest or OffsetNewest
+	SessionTimeout    int   // SessionTimeout for rebalancing
+	MaxProcessingTime int   // MaxProcessingTime for poll interval
 }

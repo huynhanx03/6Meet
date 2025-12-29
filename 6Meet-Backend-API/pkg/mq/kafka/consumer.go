@@ -3,6 +3,7 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/IBM/sarama"
@@ -11,14 +12,16 @@ import (
 
 // consumerGroup wraps sarama.ConsumerGroup
 type consumerGroup struct {
-	client     sarama.ConsumerGroup
-	topics     []string
-	handler    Handler
-	errHandler ErrorHandler
+	client      sarama.ConsumerGroup
+	topics      []string
+	handler     Handler
+	errHandler  ErrorHandler
+	middlewares []Middleware
+	wg          sync.WaitGroup
 }
 
 // NewConsumer creates a new Consumer Group
-func NewConsumer(cfg *Config, groupID string) (ConsumerGroup, error) {
+func NewConsumer(cfg *Config, groupID string, mws ...Middleware) (ConsumerGroup, error) {
 	config := sarama.NewConfig()
 	config.ClientID = cfg.ClientID
 
@@ -26,6 +29,9 @@ func NewConsumer(cfg *Config, groupID string) (ConsumerGroup, error) {
 	config.Consumer.Group.Rebalance.Strategy = sarama.NewBalanceStrategySticky()
 	config.Consumer.Offsets.Initial = sarama.OffsetOldest
 	config.Consumer.Group.Session.Timeout = utils.ToDurationMs(cfg.ConsumerInfo.SessionTimeout)
+	if cfg.ConsumerInfo.MaxProcessingTime > 0 {
+		config.Consumer.MaxProcessingTime = utils.ToDurationMs(cfg.ConsumerInfo.MaxProcessingTime)
+	}
 
 	client, err := sarama.NewConsumerGroup(cfg.Brokers, groupID, config)
 	if err != nil {
@@ -33,7 +39,8 @@ func NewConsumer(cfg *Config, groupID string) (ConsumerGroup, error) {
 	}
 
 	return &consumerGroup{
-		client: client,
+		client:      client,
+		middlewares: mws,
 	}, nil
 }
 
@@ -43,20 +50,34 @@ func (c *consumerGroup) Start(ctx context.Context, topics []string, handler Hand
 	c.handler = handler
 	c.errHandler = errHandler
 
+	// Apply Middlewares
+	wrappedHandler := Chain(handler, c.middlewares...)
+
 	consumer := &consumerGroupHandler{
-		handlerFunc: handler,
+		handlerFunc: wrappedHandler,
 		errHandler:  errHandler,
 	}
 
 	// Loop to handle rebalances
+	c.wg.Add(1)
 	go func() {
+		defer c.wg.Done()
+		attempts := 0
 		for {
-			if err := c.client.Consume(ctx, topics, consumer); err != nil {
+			err := c.client.Consume(ctx, topics, consumer)
+			if err != nil {
 				if c.errHandler != nil {
 					c.errHandler(err)
 				}
-				time.Sleep(1 * time.Second)
+
+				// Backoff before retry
+				sleepTime := utils.CalculateBackoffByTime(attempts, 1*time.Second, 30*time.Second)
+				time.Sleep(sleepTime)
+				attempts++
+			} else {
+				attempts = 0
 			}
+
 			if ctx.Err() != nil {
 				return
 			}
@@ -68,5 +89,7 @@ func (c *consumerGroup) Start(ctx context.Context, topics []string, handler Hand
 
 // Close closes the consumer group
 func (c *consumerGroup) Close() error {
-	return c.client.Close()
+	err := c.client.Close()
+	c.wg.Wait()
+	return err
 }

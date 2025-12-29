@@ -147,6 +147,37 @@ func (r *RedisEngine) Set(ctx context.Context, key string, value any, ttl time.D
 	return r.client.Set(ctx, key, byteValue, ttl).Err()
 }
 
+// BatchSet stores multiple values in a pipeline
+func (r *RedisEngine) BatchSet(ctx context.Context, values map[string]any, ttl time.Duration) error {
+	r.rwMutex.Lock()
+	defer r.rwMutex.Unlock()
+
+	pipe := r.client.Pipeline()
+
+	for key, value := range values {
+		byteValue, err := json.Marshal(value)
+		if err != nil {
+			return err
+		}
+		pipe.Set(ctx, key, byteValue, ttl)
+	}
+
+	_, err := pipe.Exec(ctx)
+	return err
+}
+
+// BatchDelete removes multiple keys from the cache
+func (r *RedisEngine) BatchDelete(ctx context.Context, keys []string) error {
+	r.rwMutex.Lock()
+	defer r.rwMutex.Unlock()
+
+	if len(keys) == 0 {
+		return nil
+	}
+
+	return r.client.Del(ctx, keys...).Err()
+}
+
 // Close closes the Redis client
 func (r *RedisEngine) Close() {
 	if r.client != nil {

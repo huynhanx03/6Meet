@@ -28,3 +28,6 @@ type Handler func(ctx context.Context, key, value []byte) error
 
 // ErrorHandler handles internal errors (e.g. from consumer loop or async producer)
 type ErrorHandler func(err error)
+
+// Middleware wraps a Handler to add functionality (logging, recovery, etc.)
+type Middleware func(Handler) Handler

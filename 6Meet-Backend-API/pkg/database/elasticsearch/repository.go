@@ -133,10 +133,70 @@ func (r *BaseRepository[T]) Search(ctx context.Context, query io.Reader) ([]T, e
 		return nil, fmt.Errorf("%w: %v", ErrDecodeFailed, err)
 	}
 
-	results := make([]T, 0, len(response.Hits.Hits))
-	for _, hit := range response.Hits.Hits {
-		results = append(results, hit.Source)
+	results := make([]T, len(response.Hits.Hits))
+	for i := range response.Hits.Hits {
+		results[i] = response.Hits.Hits[i].Source
 	}
 
 	return results, nil
+}
+
+// BatchIndex indexes multiple documents using Bulk API
+func (r *BaseRepository[T]) BatchIndex(ctx context.Context, docs []*T) error {
+	if len(docs) == 0 {
+		return nil
+	}
+
+	var buf bytes.Buffer
+	for _, doc := range docs {
+		// Meta line
+		meta := []byte(fmt.Sprintf(`{ "index" : { "_index" : "%s", "_id" : "%s" } }%s`, r.index, (*doc).GetID(), "\n"))
+		buf.Write(meta)
+
+		// Data line
+		data, err := json.Marshal(doc)
+		if err != nil {
+			return fmt.Errorf("failed to marshal doc: %w", err)
+		}
+		buf.Write(data)
+		buf.WriteByte('\n')
+	}
+
+	res, err := r.client.Bulk(bytes.NewReader(buf.Bytes()))
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrIndexRequestFailed, err)
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		return fmt.Errorf("%w: %s", ErrIndexRequestFailed, res.Status())
+	}
+
+	return nil
+}
+
+// BatchDelete deletes multiple documents using Bulk API
+func (r *BaseRepository[T]) BatchDelete(ctx context.Context, docIDs []string) error {
+	if len(docIDs) == 0 {
+		return nil
+	}
+
+	var buf bytes.Buffer
+	for _, id := range docIDs {
+		// Meta line only for delete
+		meta := []byte(fmt.Sprintf(`{ "delete" : { "_index" : "%s", "_id" : "%s" } }%s`, r.index, id, "\n"))
+		buf.Write(meta)
+	}
+
+	res, err := r.client.Bulk(bytes.NewReader(buf.Bytes()))
+	if err != nil {
+		return fmt.Errorf("%w: %v", ErrDeleteRequestFailed, err)
+	}
+	defer res.Body.Close()
+
+	if res.IsError() {
+		return fmt.Errorf("%w: %s", ErrDeleteRequestFailed, res.Status())
+	}
+
+	return nil
 }

@@ -96,12 +96,12 @@ func (c *Client) Close() error {
 func (c *Client) buildURI() string {
 	if c.config.Username != "" && c.config.Password != "" {
 		return fmt.Sprintf(
-			"mongodb://%s@%s:%d",
+			"mongodb://%s@%s:%d/?directConnection=true",
 			url.UserPassword(c.config.Username, c.config.Password).String(),
 			c.config.Host,
 			c.config.Port,
 		)
 	}
 
-	return fmt.Sprintf("mongodb://%s:%d", c.config.Host, c.config.Port)
+	return fmt.Sprintf("mongodb://%s:%d/?directConnection=true", c.config.Host, c.config.Port)
 }

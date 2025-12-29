@@ -49,10 +49,13 @@ func NewProducer(cfg *Config) (Producer, error) {
 
 // Publish sends a message to a specific topic
 func (ap *asyncProducer) Publish(ctx context.Context, topic string, key, value []byte) {
+	headers := buildHeaders(ctx)
+
 	msg := &sarama.ProducerMessage{
-		Topic: topic,
-		Key:   sarama.ByteEncoder(key),
-		Value: sarama.ByteEncoder(value),
+		Topic:   topic,
+		Key:     sarama.ByteEncoder(key),
+		Value:   sarama.ByteEncoder(value),
+		Headers: headers,
 	}
 
 	// Non-blocking send
