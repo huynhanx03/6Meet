@@ -30,7 +30,8 @@ func (rg *RouterGroup) registerRoutes(r *gin.Engine) {
 	// User routes
 	users := api.Group("/users")
 	{
-		users.POST("/search", rg.UserHandler.Find)
+		// users.POST("/search", rg.UserHandler.Find)
+		users.POST("/search", rg.UserHandler.Search)
 		users.GET("/:id", rg.UserHandler.Get)
 
 		users.POST("", rg.UserHandler.Create)

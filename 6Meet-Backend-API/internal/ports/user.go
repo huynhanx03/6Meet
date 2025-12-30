@@ -39,6 +39,8 @@ type UserService interface {
 
 	HandleUserChange(ctx context.Context, evt *cdc.DebeziumPayload[entity.User]) error
 	HandleUserBatchChange(ctx context.Context, evts []*cdc.DebeziumPayload[entity.User]) error
+
+	Search(ctx context.Context, opts *d.QueryOptions) (*d.Paginated[*dto.UserResponse], error)
 }
 
 // UserSearchRepository defines the interface for user search engine operations
@@ -47,6 +49,7 @@ type UserSearchRepository interface {
 	BatchIndex(ctx context.Context, users []*entity.User) error
 	Delete(ctx context.Context, id string) error
 	BatchDelete(ctx context.Context, ids []string) error
+	Search(ctx context.Context, opts *d.QueryOptions) (*d.Paginated[*entity.User], error)
 }
 
 // UserProducer defines the interface for user related events

@@ -272,3 +272,31 @@ func (s *userService) HandleUserBatchChange(ctx context.Context, evts []*cdc.Deb
 
 	return nil
 }
+
+// Search searches for users using Elasticsearch
+func (s *userService) Search(ctx context.Context, opts *d.QueryOptions) (*d.Paginated[*dto.UserResponse], error) {
+	// Search in Elasticsearch
+	result, err := s.searchRepo.Search(ctx, opts)
+	if err != nil {
+		return nil, apperr.Wrap(err, response.CodeInternalServer, "Failed to search users", http.StatusInternalServerError)
+	}
+
+	if result.Records == nil {
+		return &d.Paginated[*dto.UserResponse]{
+			Records:    &[]*dto.UserResponse{},
+			Pagination: result.Pagination,
+		}, nil
+	}
+
+	// Map entity -> response
+	userEntities := *result.Records
+	userResponses := make([]*dto.UserResponse, len(userEntities))
+	for i, user := range userEntities {
+		userResponses[i] = mapper.ToUserResponse(user)
+	}
+
+	return &d.Paginated[*dto.UserResponse]{
+		Records:    &userResponses,
+		Pagination: result.Pagination,
+	}, nil
+}
