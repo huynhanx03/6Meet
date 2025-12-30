@@ -2,33 +2,38 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/global"
-	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/constant"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/dto"
+	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/entity"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/core/mapper"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/ports"
 	"go.uber.org/zap"
 
+	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/cdc"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/common/apperr"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/common/http/response"
 	d "github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/dto"
-	"github.com/huynhanx03/6Meet/6Meet-Backend-API/pkg/utils"
 )
 
 type userService struct {
-	userRepo ports.UserRepository
+	userRepo   ports.UserRepository
+	cacheRepo  ports.UserCacheRepository
+	searchRepo ports.UserSearchRepository
 }
 
-var _ ports.UserService = (*userService)(nil)
-
-func NewUserService(
+func NewUser(
 	userRepo ports.UserRepository,
+	cacheRepo ports.UserCacheRepository,
+	searchRepo ports.UserSearchRepository,
 ) ports.UserService {
 	return &userService{
-		userRepo: userRepo,
+		userRepo:   userRepo,
+		cacheRepo:  cacheRepo,
+		searchRepo: searchRepo,
 	}
 }
 
@@ -62,12 +67,10 @@ func (s *userService) Find(ctx context.Context, opts *d.QueryOptions) (*d.Pagina
 
 // Get gets a user by ID
 func (s *userService) Get(ctx context.Context, id string) (*dto.UserResponse, error) {
-	var userResponse dto.UserResponse
-
 	// Check cache
-	err := utils.HandleHitCache(ctx, &userResponse, global.Redis, constant.PrefixUser+id)
+	userResponse, err := s.cacheRepo.Get(ctx, id)
 	if err == nil {
-		return &userResponse, nil // Cache Hit
+		return userResponse, nil // Cache Hit
 	}
 
 	// Cache Miss: Query Database
@@ -80,7 +83,7 @@ func (s *userService) Get(ctx context.Context, id string) (*dto.UserResponse, er
 	go func() {
 		bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		e := utils.HandleSetCache(bgCtx, user, global.Redis, constant.PrefixUser+id, constant.CacheExpirationUser)
+		e := s.cacheRepo.Set(bgCtx, user)
 		if e != nil {
 			global.Logger.Error("Failed to set cache", zap.Error(e))
 		}
@@ -149,4 +152,151 @@ func (s *userService) Delete(ctx context.Context, id string) error {
 		return apperr.Wrap(err, response.CodeDatabaseError, "Failed to delete user", http.StatusInternalServerError)
 	}
 	return nil
+}
+
+// HandleUserChange processes CDC events for users
+func (s *userService) HandleUserChange(ctx context.Context, evt *cdc.DebeziumPayload[entity.User]) error {
+	switch evt.Op {
+	case cdc.OpCreate:
+		if evt.After == nil {
+			return fmt.Errorf("operation %s requires 'after' state", evt.Op)
+		}
+		user := evt.After
+
+		// Sync to Elasticsearch
+		if err := s.searchRepo.Index(ctx, user); err != nil {
+			global.Logger.Error("Failed to sync user to search", zap.String("id", user.ID), zap.Error(err))
+		} else {
+			global.Logger.Info("Synced user to search", zap.String("id", user.ID))
+		}
+	case cdc.OpUpdate:
+		if evt.After == nil {
+			return fmt.Errorf("operation %s requires 'after' state", evt.Op)
+		}
+		user := evt.After
+
+		// Sync to Cache
+		if _, err := s.cacheRepo.Get(ctx, user.ID); err == nil {
+			if err := s.cacheRepo.Set(ctx, user); err != nil {
+				global.Logger.Error("Failed to sync user to cache", zap.String("id", user.ID), zap.Error(err))
+			} else {
+				global.Logger.Info("Synced user to cache", zap.String("id", user.ID))
+			}
+		}
+
+		// Sync to Elasticsearch
+		if err := s.searchRepo.Index(ctx, user); err != nil {
+			global.Logger.Error("Failed to sync user to search", zap.String("id", user.ID), zap.Error(err))
+		} else {
+			global.Logger.Info("Synced user to search", zap.String("id", user.ID))
+		}
+
+	case cdc.OpDelete:
+		if evt.Before == nil {
+			return fmt.Errorf("operation %s requires 'before' state", evt.Op)
+		}
+		userID := evt.Before.ID
+
+		// Delete from Cache
+		if err := s.cacheRepo.Delete(ctx, userID); err != nil {
+			global.Logger.Error("Failed to delete user from cache", zap.String("id", userID), zap.Error(err))
+		}
+
+		// Delete from Elasticsearch
+		if err := s.searchRepo.Delete(ctx, userID); err != nil {
+			global.Logger.Error("Failed to delete user from search", zap.String("id", userID), zap.Error(err))
+		}
+	}
+
+	return nil
+}
+
+// HandleUserBatchChange processes a batch of CDC events for users
+func (s *userService) HandleUserBatchChange(ctx context.Context, evts []*cdc.DebeziumPayload[entity.User]) error {
+	var usersToCache []*entity.User
+	var usersToIndex []*entity.User
+	var idsToDelete []string
+
+	for _, evt := range evts {
+		switch evt.Op {
+		case cdc.OpCreate, cdc.OpUpdate:
+			if evt.After == nil {
+				continue
+			}
+			user := evt.After
+			if _, err := s.cacheRepo.Get(ctx, user.ID); err == nil {
+				usersToCache = append(usersToCache, user)
+			}
+
+			usersToIndex = append(usersToIndex, user)
+		case cdc.OpDelete:
+			if evt.Before != nil {
+				idsToDelete = append(idsToDelete, evt.Before.ID)
+			}
+		}
+	}
+
+	// Bulk Sync to Cache
+	if len(usersToCache) > 0 {
+		if err := s.cacheRepo.BatchSet(ctx, usersToCache); err != nil {
+			global.Logger.Error("Failed to batch sync users to cache", zap.Error(err))
+		} else {
+			// global.Logger.Info("Batch synced users to cache", zap.Int("count", len(usersToCache)))
+		}
+	}
+
+	if len(idsToDelete) > 0 {
+		if err := s.cacheRepo.BatchDelete(ctx, idsToDelete); err != nil {
+			global.Logger.Error("Failed to batch delete users from cache", zap.Error(err))
+		} else {
+			// global.Logger.Info("Batch deleted users from cache", zap.Int("count", len(idsToDelete)))
+		}
+	}
+
+	// Bulk Sync to Elasticsearch
+	if len(usersToIndex) > 0 {
+		if err := s.searchRepo.BatchIndex(ctx, usersToIndex); err != nil {
+			global.Logger.Error("Failed to batch sync users to search", zap.Error(err))
+		} else {
+			// global.Logger.Info("Batch synced users to search", zap.Int("count", len(usersToIndex)))
+		}
+	}
+
+	if len(idsToDelete) > 0 {
+		if err := s.searchRepo.BatchDelete(ctx, idsToDelete); err != nil {
+			global.Logger.Error("Failed to batch delete users from search", zap.Error(err))
+		} else {
+			// global.Logger.Info("Batch deleted users from search", zap.Int("count", len(idsToDelete)))
+		}
+	}
+
+	return nil
+}
+
+// Search searches for users using Elasticsearch
+func (s *userService) Search(ctx context.Context, opts *d.QueryOptions) (*d.Paginated[*dto.UserResponse], error) {
+	// Search in Elasticsearch
+	result, err := s.searchRepo.Search(ctx, opts)
+	if err != nil {
+		return nil, apperr.Wrap(err, response.CodeInternalServer, "Failed to search users", http.StatusInternalServerError)
+	}
+
+	if result.Records == nil {
+		return &d.Paginated[*dto.UserResponse]{
+			Records:    &[]*dto.UserResponse{},
+			Pagination: result.Pagination,
+		}, nil
+	}
+
+	// Map entity -> response
+	userEntities := *result.Records
+	userResponses := make([]*dto.UserResponse, len(userEntities))
+	for i, user := range userEntities {
+		userResponses[i] = mapper.ToUserResponse(user)
+	}
+
+	return &d.Paginated[*dto.UserResponse]{
+		Records:    &userResponses,
+		Pagination: result.Pagination,
+	}, nil
 }
