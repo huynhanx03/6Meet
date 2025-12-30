@@ -3,7 +3,6 @@ package redis
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -63,7 +62,7 @@ func (r *RedisEngine) connect() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	if err := r.client.Ping(ctx).Err(); err != nil {
-		return fmt.Errorf("redis ping failed: %w", err)
+		return fmt.Errorf("%w: %v", ErrPingFailed, err)
 	}
 
 	return nil
@@ -104,7 +103,7 @@ func (r *RedisEngine) setDefaultConfig() {
 func (r *RedisEngine) Get(ctx context.Context, key string) ([]byte, bool, error) {
 	byteValue, err := r.client.Get(ctx, key).Bytes()
 	if err == redisV9.Nil {
-		return nil, false, errors.New("key not found")
+		return nil, false, ErrKeyNotFound
 	}
 	if err != nil {
 		return nil, false, err
@@ -146,6 +145,37 @@ func (r *RedisEngine) Set(ctx context.Context, key string, value any, ttl time.D
 	}
 
 	return r.client.Set(ctx, key, byteValue, ttl).Err()
+}
+
+// BatchSet stores multiple values in a pipeline
+func (r *RedisEngine) BatchSet(ctx context.Context, values map[string]any, ttl time.Duration) error {
+	r.rwMutex.Lock()
+	defer r.rwMutex.Unlock()
+
+	pipe := r.client.Pipeline()
+
+	for key, value := range values {
+		byteValue, err := json.Marshal(value)
+		if err != nil {
+			return err
+		}
+		pipe.Set(ctx, key, byteValue, ttl)
+	}
+
+	_, err := pipe.Exec(ctx)
+	return err
+}
+
+// BatchDelete removes multiple keys from the cache
+func (r *RedisEngine) BatchDelete(ctx context.Context, keys []string) error {
+	r.rwMutex.Lock()
+	defer r.rwMutex.Unlock()
+
+	if len(keys) == 0 {
+		return nil
+	}
+
+	return r.client.Del(ctx, keys...).Err()
 }
 
 // Close closes the Redis client

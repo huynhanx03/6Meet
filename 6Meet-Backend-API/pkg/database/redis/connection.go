@@ -13,7 +13,7 @@ func NewConnection(cfg *settings.Redis) (*RedisEngine, error) {
 	}
 
 	if err := engine.connect(); err != nil {
-		return nil, fmt.Errorf("failed to connect to Redis: %w", err)
+		return nil, fmt.Errorf("%w: %v", ErrConnectionFailed, err)
 	}
 
 	return engine, nil

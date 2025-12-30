@@ -12,6 +12,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/huynhanx03/6Meet/6Meet-Backend-API/global"
+	"github.com/huynhanx03/6Meet/6Meet-Backend-API/internal/di"
 	"go.uber.org/zap"
 )
 
@@ -25,6 +26,18 @@ func NewServer(engine *gin.Engine) *Server {
 	return &Server{
 		engine: engine,
 	}
+}
+
+// NewHTTPServer creates the HTTP server using global dependencies
+func NewHTTPServer() *Server {
+	// Create router group with dependencies
+	routerGroup := NewRouterGroup(di.GlobalContainer.UserHandler)
+
+	// Create Gin engine
+	engine := NewEngine(routerGroup)
+
+	// Create Server
+	return NewServer(engine)
 }
 
 // Run starts the HTTP server with graceful shutdown

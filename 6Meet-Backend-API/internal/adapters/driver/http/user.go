@@ -19,6 +19,7 @@ type UserHandler interface {
 	Get(c *gin.Context)
 	Update(c *gin.Context)
 	Delete(c *gin.Context)
+	Search(c *gin.Context)
 }
 
 // userHandler implements UserHandler
@@ -27,9 +28,7 @@ type userHandler struct {
 	userService ports.UserService
 }
 
-var _ UserHandler = (*userHandler)(nil)
-
-func NewUserHandler(userService ports.UserService) UserHandler {
+func NewUser(userService ports.UserService) UserHandler {
 	return &userHandler{
 		userService: userService,
 	}
@@ -112,4 +111,21 @@ func (h *userHandler) Delete(c *gin.Context) {
 	}
 
 	response.SuccessResponse(c, response.CodeDeleted, nil)
+}
+
+// Search handles the HTTP request to search users
+func (h *userHandler) Search(c *gin.Context) {
+	opts, ok := request.ParseRequest[d.QueryOptions](c)
+
+	if !ok {
+		return
+	}
+
+	users, err := h.userService.Search(c.Request.Context(), opts)
+	if err != nil {
+		response.ErrorResponse(c, response.CodeInternalServer, err)
+		return
+	}
+
+	response.SuccessResponse(c, response.CodeRetrieved, users)
 }
